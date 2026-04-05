@@ -953,6 +953,86 @@ function escHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// ─── PULL TO REFRESH ─────────────────────────────────────────
+function setupPullToRefresh() {
+  const container = document.querySelector('.main-content');
+  const ptr = document.getElementById('pullToRefresh');
+  const spinner = ptr.querySelector('.ptr-spinner');
+  const text = ptr.querySelector('.ptr-text');
+
+  let startY = 0;
+  let pulling = false;
+  let triggered = false;
+
+  container.addEventListener('touchstart', (e) => {
+    if (container.scrollTop === 0) {
+      startY = e.touches[0].clientY;
+      pulling = true;
+      triggered = false;
+    }
+  });
+
+  container.addEventListener('touchmove', (e) => {
+    if (!pulling) return;
+
+    const currentY = e.touches[0].clientY;
+    let diff = currentY - startY;
+
+    if (diff > 0) {
+      e.preventDefault();
+
+      const pull = Math.min(diff, 120);
+      ptr.style.transform = `translateY(${pull}px)`;
+
+      if (pull > 80) {
+        text.textContent = 'Release to refresh';
+        spinner.style.opacity = 1;
+        triggered = true;
+      } else {
+        text.textContent = 'Pull to refresh';
+        spinner.style.opacity = 0;
+        triggered = false;
+      }
+    }
+  }, { passive: false });
+
+  container.addEventListener('touchend', () => {
+    if (!pulling) return;
+
+    pulling = false;
+
+    if (triggered) {
+      ptr.style.transform = `translateY(60px)`;
+      text.textContent = 'Refreshing...';
+      spinner.style.opacity = 1;
+
+      triggerAppRefresh().then(() => {
+        resetPTR(ptr, spinner, text);
+      });
+    } else {
+      resetPTR(ptr, spinner, text);
+    }
+  });
+}
+
+function resetPTR(ptr, spinner, text) {
+  setTimeout(() => {
+    ptr.style.transform = `translateY(0px)`;
+    spinner.style.opacity = 0;
+    text.textContent = 'Pull to refresh';
+  }, 300);
+}
+
+async function triggerAppRefresh() {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      switchView(State.currentView);
+      showToast('Refreshed!', 'success');
+      resolve();
+    }, 800);
+  });
+}
+
 // ─── INIT ─────────────────────────────────────────────────────
 function init() {
   // ✅ Hide UI first
@@ -980,6 +1060,7 @@ function init() {
 
   // ✅ Show UI AFTER everything is ready
   document.body.classList.remove('app-loading');
+  setupPullToRefresh();
 }
 
 document.addEventListener('DOMContentLoaded', init);
