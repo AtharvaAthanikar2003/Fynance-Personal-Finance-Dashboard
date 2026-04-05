@@ -698,3 +698,46 @@ body.app-loading {
 .view.active {
   display: block;
 }
+
+/* =========================
+   PULL TO REFRESH
+   ========================= */
+
+.ptr {
+  position: absolute;
+  top: -70px;
+  left: 0;
+  width: 100%;
+  height: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease;
+  z-index: 5;
+}
+
+.ptr-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid rgba(255,255,255,0.2);
+  border-top: 3px solid #4ade9b;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  opacity: 0;
+}
+
+.ptr-text {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Prevent browser pull-to-refresh conflict */
+body {
+  overscroll-behavior-y: contain;
+}
