@@ -255,6 +255,7 @@ button { cursor: pointer; }
   overflow-x: hidden;
   scroll-behavior: auto;     /* no smooth scroll (prevents drift) */
   transition: margin var(--transition);
+  overscroll-behavior-y: contain;
 }
 
 /* ============================================================
