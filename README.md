@@ -1,6 +1,6 @@
 # 💰 Fynance — Personal Finance Dashboard
 
-A clean, interactive finance dashboard built with **vanilla JavaScript**, **Chart.js**, and custom CSS — no build tools, no bundlers, just open and run.
+A clean, interactive finance dashboard built with **Vanilla JavaScript**, **Chart.js**, and custom CSS — no build tools, no bundlers, just open and run.
 
 ---
 
