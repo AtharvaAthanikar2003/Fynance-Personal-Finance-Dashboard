@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fynance — Personal Finance Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/png" href="data-analysis.png">
+</head>
+<body class="app-loading">
+  <div id="app">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <span class="logo-mark">F</span>
+        <span class="logo-text">ynance</span>
+      </div>
+      <nav class="sidebar-nav">
+        <a class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span>Overview</span>
+        </a>
+        <a class="nav-item" data-view="transactions" onclick="switchView('transactions')">
+          <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h11"/><path d="M19 15l3 3-3 3"/></svg>
+          <span>Transactions</span>
+        </a>
+        <a class="nav-item" data-view="insights" onclick="switchView('insights')">
+          <svg viewBox="0 0 24 24"><path d="M2 20h20"/><path d="M6 20V10l4-4 4 6 4-8v16"/></svg>
+          <span>Insights</span>
+        </a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="role-switcher">
+          <div class="role-label">Role</div>
+          <select id="roleSelect" onchange="switchRole(this.value)">
+            <option value="viewer">👁 Viewer</option>
+            <option value="admin">⚡Admin</option>
+          </select>
+        </div>
+        <div class="theme-toggle" onclick="toggleTheme()">
+          <span id="themeIcon">☀️</span>
+          <span id="themeLabel">Light Mode</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="mobile-logo"><span class="logo-mark">F</span>ynance</div>
+      <div class="mobile-role" id="mobileRole">👁 Viewer</div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- ===== DASHBOARD VIEW ===== -->
+      <section id="view-dashboard" class="view active">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Overview</h1>
+            <p class="page-subtitle" id="dashboardDate"></p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-ghost" onclick="exportData('json')">↓ Export</button>
+            <button class="btn btn-primary admin-only hidden" onclick="openAddModal()">+ Add Transaction</button>
+          </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="cards-grid">
+          <div class="card card-balance">
+            <div class="card-label">Total Balance</div>
+            <div class="card-value" id="totalBalance">—</div>
+            <div class="card-trend" id="balanceTrend"></div>
+            <div class="card-spark" id="sparkBalance"></div>
+          </div>
+          <div class="card card-income">
+            <div class="card-label">Total Income</div>
+            <div class="card-value" id="totalIncome">—</div>
+            <div class="card-trend" id="incomeTrend"></div>
+          </div>
+          <div class="card card-expense">
+            <div class="card-label">Total Expenses</div>
+            <div class="card-value" id="totalExpense">—</div>
+            <div class="card-trend" id="expenseTrend"></div>
+          </div>
+          <div class="card card-savings">
+            <div class="card-label">Savings Rate</div>
+            <div class="card-value" id="savingsRate">—</div>
+            <div class="savings-bar-wrap"><div class="savings-bar" id="savingsBar"></div></div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+          <div class="chart-box chart-wide">
+            <div class="chart-header">
+              <span class="chart-title">Balance Trend</span>
+              <div class="chart-tabs">
+                <button class="chart-tab active" onclick="setChartPeriod('3m',this)">3M</button>
+                <button class="chart-tab" onclick="setChartPeriod('6m',this)">6M</button>
+                <button class="chart-tab" onclick="setChartPeriod('1y',this)">1Y</button>
+              </div>
+            </div>
+            <canvas id="lineChart" height="220"></canvas>
+          </div>
+          <div class="chart-box chart-narrow">
+            <div class="chart-header"><span class="chart-title">Spending by Category</span></div>
+            <canvas id="donutChart" height="220"></canvas>
+            <div id="donutLegend" class="donut-legend"></div>
+          </div>
+        </div>
+
+        <!-- Recent Transactions on dashboard -->
+        <div class="section-box">
+          <div class="section-header">
+            <span class="section-title">Recent Transactions</span>
+            <a class="link-btn" onclick="switchView('transactions')">View All →</a>
+          </div>
+          <div id="recentTxList" class="tx-list"></div>
+        </div>
+      </section>
+
+      <!-- ===== TRANSACTIONS VIEW ===== -->
+      <section id="view-transactions" class="view">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Transactions</h1>
+            <p class="page-subtitle" id="txCount"></p>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-ghost" onclick="exportData('csv')">↓ CSV</button>
+            <button class="btn btn-primary admin-only hidden" onclick="openAddModal()">+ Add Transaction</button>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters-bar">
+          <div class="search-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input id="searchInput" class="search-input" type="text" placeholder="Search transactions…" oninput="applyFilters()" />
+          </div>
+          <select id="filterType" class="filter-select" onchange="applyFilters()">
+            <option value="">All Types</option>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+          <select id="filterCategory" class="filter-select" onchange="applyFilters()">
+            <option value="">All Categories</option>
+          </select>
+          <select id="filterMonth" class="filter-select" onchange="applyFilters()">
+            <option value="">All Months</option>
+          </select>
+          <select id="sortBy" class="filter-select" onchange="applyFilters()">
+            <option value="date-desc">Newest First</option>
+            <option value="date-asc">Oldest First</option>
+            <option value="amount-desc">Highest Amount</option>
+            <option value="amount-asc">Lowest Amount</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear</button>
+        </div>
+
+        <div id="txTable" class="tx-table-wrap"></div>
+        <div id="txEmpty" class="empty-state hidden">
+          <div class="empty-icon">🔍</div>
+          <div class="empty-title">No transactions found</div>
+          <div class="empty-sub">Try adjusting your filters</div>
+        </div>
+      </section>
+
+      <!-- ===== INSIGHTS VIEW ===== -->
+      <section id="view-insights" class="view">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Insights</h1>
+            <p class="page-subtitle">Your financial patterns at a glance</p>
+          </div>
+        </div>
+
+        <div class="insights-grid" id="insightsGrid"></div>
+
+        <div class="charts-row" style="margin-top:1.5rem">
+          <div class="chart-box chart-wide">
+            <div class="chart-header"><span class="chart-title">Monthly Income vs Expenses</span></div>
+            <canvas id="barChart" height="250"></canvas>
+          </div>
+          <div class="chart-box chart-narrow">
+            <div class="chart-header"><span class="chart-title">Category Breakdown</span></div>
+            <canvas id="hbarChart" height="250"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div id="modal" class="modal-overlay hidden" onclick="closeModalOutside(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modalTitle">Add Transaction</h2>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editId" value="" />
+        <div class="form-group">
+          <label>Description</label>
+          <input id="fDesc" type="text" class="form-input" placeholder="e.g. Grocery Store" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Amount (₹)</label>
+            <input id="fAmount" type="number" class="form-input" placeholder="0.00" min="0" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Type</label>
+            <select id="fType" class="form-input">
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <select id="fCategory" class="form-input">
+              <option value="Food">Food</option>
+              <option value="Transport">Transport</option>
+              <option value="Housing">Housing</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Healthcare">Healthcare</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Utilities">Utilities</option>
+              <option value="Education">Education</option>
+              <option value="Salary">Salary</option>
+              <option value="Freelance">Freelance</option>
+              <option value="Investment">Investment</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input id="fDate" type="date" class="form-input" />
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveTransaction()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
